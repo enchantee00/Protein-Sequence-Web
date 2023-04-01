@@ -18,7 +18,13 @@ import pandas as pd
 seq_pieces_charge = []
 x_axis = ['C_terminus']
 error_id_array = []
-driver = webdriver.Chrome(ChromeDriverManager().install()) #드라이버 정의
+
+chrome_options = webdriver.ChromeOptions()
+chrome_options.add_argument('--headless')
+chrome_options.add_argument('--no-sandbox')
+chrome_options.add_argument('--disable-dev-shm-usage')
+driver = webdriver.Chrome(ChromeDriverManager().install(), chrome_options=chrome_options) #드라이버 정의
+
 
 # #uniprot ID 반환
 # def get_uniprot_accession_id(response_xml):
