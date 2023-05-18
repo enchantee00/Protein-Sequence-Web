@@ -260,7 +260,7 @@ def concatenate_array(c, n, array):
 conn = pymysql.connect(host='localhost', user='dev_kyome', password='password', database='protein_sequence', port=3307)
 cur = conn.cursor()
 
-df = pd.read_csv('Human protein atlas-brain/brain_category_rna_amygdala_Detected.tsv', sep = '\t')
+df = pd.read_csv('Human_protein_atlas_brain/brain_category_rna_amygdala_Detected.tsv', sep = '\t')
 uniprot_id_array = df['Uniprot'].dropna().to_list()
 print(uniprot_id_array)
 
