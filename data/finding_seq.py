@@ -257,7 +257,7 @@ def concatenate_array(c, n, array):
 
 
 #DB 연결 및 열기
-conn = pymysql.connect(host='localhost', user='dev_kyome', password='password', database='protein_sequence', port=3307)
+conn = pymysql.connect(host='localhost', user='dev_kyome', password='password', database='protein_sequence', port=3306)
 cur = conn.cursor()
 
 df = pd.read_csv('Human_protein_atlas_brain/brain_category_rna_amygdala_Detected.tsv', sep = '\t')
