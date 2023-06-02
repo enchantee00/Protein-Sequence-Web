@@ -178,23 +178,48 @@ def get_domain(uniprotID):
     x_axis = ['C_terminus']
     time.sleep(10)
     table = driver.find_element(By.XPATH, '//*[@id="family_and_domains"]/div/div[2]/protvista-manager/div/protvista-datatable/table')
-    select = Select(driver.find_element(By.XPATH, '//*[@id="family_and_domains"]/div/div[2]/protvista-manager/div/protvista-datatable/table/thead/tr/th[2]/span/select'))  
-    select.select_by_value('Domain')
+    select = Select(driver.find_element(By.XPATH, '//*[@id="family_and_domains"]/div/div[2]/protvista-manager/div/protvista-datatable/table/thead/tr/th[2]/span/select')) 
 
     count = 0
-    domain_flag = False
-    for tr in table.find_elements(By.TAG_NAME, 'tr'):
-        if domain_flag:
-            td = tr.find_element(By.TAG_NAME, "td")
-            domain_seq_array.append(td.get_attribute('innerText').strip('Sequence: '))
-            count += 1
-            x_axis.append('Domain_' + str(count))
-            domain_flag = False
-            
-            continue
+    flag = False
 
-        if tr.get_attribute('class') == 'even' or tr.get_attribute('class') == 'odd':
-            domain_flag = True
+    #Domain 시도, 안되면 region, 이것도 안되면 exception
+    try:
+        select.select_by_value('Domain')
+        print("Domain select")
+            
+        for tr in table.find_elements(By.TAG_NAME, 'tr'):
+            if flag:
+                td = tr.find_element(By.TAG_NAME, "td")
+                domain_seq_array.append(td.get_attribute('innerText').strip('Sequence: '))
+                count += 1
+                x_axis.append('Domain_' + str(count))
+                flag = False
+                
+                continue
+
+            if tr.get_attribute('class') == 'even' or tr.get_attribute('class') == 'odd':
+                flag = True
+
+    except:
+        select.select_by_value('Region')
+        print("Region select")
+
+        for tr in table.find_elements(By.TAG_NAME, 'tr'):
+            if flag:
+                td = tr.find_element(By.TAG_NAME, "td")
+                domain_seq_array.append(td.get_attribute('innerText').strip('Sequence: '))
+                count += 1
+                x_axis.append('Region_' + str(count))
+                flag = False
+                
+                continue
+
+            if tr.get_attribute('class') == 'even' or tr.get_attribute('class') == 'odd':
+                flag = True
+        
+        print(domain_seq_array)
+
 
     x_axis.append('N_terminus')
         # for i in range(len(tr)):
@@ -262,6 +287,7 @@ cur = conn.cursor()
 
 df = pd.read_csv('Human_protein_atlas_brain/brain_category_rna_amygdala_Detected.tsv', sep = '\t')
 uniprot_id_array = df['Uniprot'].dropna().to_list()
+# uniprot_id_array = ['Q6UUV9']
 print(uniprot_id_array)
 
 # uniprot_id_array = ['P17600']
