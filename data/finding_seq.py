@@ -13,6 +13,7 @@ import mpld3
 import pymysql
 
 import pandas as pd
+import multiprocessing
 
 
 seq_pieces_charge = []
@@ -25,50 +26,6 @@ chrome_options.add_argument('--no-sandbox')
 chrome_options.add_argument('--disable-dev-shm-usage')
 driver = webdriver.Chrome(ChromeDriverManager().install(), chrome_options=chrome_options) #드라이버 정의
 
-
-# #uniprot ID 반환
-# def get_uniprot_accession_id(response_xml):
-#     parser = etree.XMLParser(recover=True)
-#     root = ET.fromstring(response_xml, parser=parser)
-#     return next(
-#         el for el in root.getchildren()[0].getchildren()
-#         if el.attrib['dbSource'] == 'UniProt'
-#     ).attrib['dbAccessionId']
-
-
-# def map_pdb_to_uniprot(pdb_id):
-#     pdb_mapping_response = requests.get(
-#         pdb_mapping_url, params={'query': pdb_id}
-#     ).text
-#     uniprot_id = get_uniprot_accession_id(pdb_mapping_response)
-#     return uniprot_id
-
-
-# # PDB seq
-# def get_seq_from_PDB():
-#     decoded_data = fetch(pdb_id)
-#     print(decoded_data.entity_list)
-#     for i in decoded_data.entity_list:
-
-#         #빈 문자열이 담기길래 if문 처리 해줌
-#         if len(i['sequence']) > 0:
-#             seq_pdb.append(i['sequence'])
-
-#     print(seq_pdb)
-
-
-# #전체 sequence 받기
-# def get_seq_from_expasy():
-#     with ExPASy.get_sprot_raw(uniprot_id) as handle:
-#         seq_record = SeqIO.read(handle, "swiss")
-#     seq = str(seq_record.seq)
-#     print(seq_record.id)
-#     print(seq_record.name)
-#     # print(repr(seq_record.seq))
-#     # print("Length %i" % len(seq_record))
-#     # print(seq_record.annotations["keywords"])
-#     return seq
-    
 
 #AlphaFold seq
 #시간 오래 걸림
@@ -280,26 +237,13 @@ def concatenate_array(c, n, array):
     return arr
 
 
-
-#DB 연결 및 열기
-conn = pymysql.connect(host='localhost', user='dev_kyome', password='password', database='protein_sequence', port=3307)
-cur = conn.cursor()
-
-df = pd.read_csv('Human_protein_atlas_brain/brain_category_rna_amygdala_Detected.tsv', sep = '\t')
-uniprot_id_array = df['Uniprot'].dropna().to_list()
-# uniprot_id_array = ['Q6UUV9']
-print(uniprot_id_array)
-
-# uniprot_id_array = ['P17600']
-
-# print(uniprot_id_array)
-# uniprot_id_array = uniprot_column.values
-# print(uniprot_id_array)
-
-# uniprot_id_array = ['P05067', 'P05049', 'P43014']
-
-for i in uniprot_id_array:
-    uniprot_id = i
+def process():
+    num = 0
+    for s in range(len(i)):
+        if i[s] == ',':
+            num = s
+            break
+    uniprot_id = i[0:num]
     #seq 정보, charge값 구하기
     try:
         seq_alphafold = get_seq_from_alphafold() #AlphaFold에서 구한 seq(C + Domain + N)
@@ -316,31 +260,37 @@ for i in uniprot_id_array:
         seq_pieces_charge_str = ' '.join(map(str,seq_pieces_charge))
 
         print(array_complete_str, x_axis_str, seq_pieces_charge_str)
-
-
-        # if (conn.is_connected()):
-        #     print("Connected")
-        # else:
-        #     print("Not connected")
-            
+        
         
         cur.execute('INSERT INTO charge_info (uniprotID, sequence, position, charge) VALUES (%s, %s, %s, %s)', (uniprot_id, array_complete_str, x_axis_str, seq_pieces_charge_str))
         conn.commit()
-
-
-    # 그래프 그리기
-    # plt.plot(x_axis, seq_pieces_charge, '-bo')
-    # plt.show()
-    # print(mpld3.fig_to_html(f, figid='THIS_IS_FIGID'))
 
     except:
         print("에러 발생: " + uniprot_id)
         error_id_array.append(uniprot_id)
 
-conn.close()
 
-print(error_id_array, str(len(error_id_array)) + "개")
+if __name__ == "__main__":
+    #DB 연결 및 열기
+    conn = pymysql.connect(host='localhost', user='dev_kyome', password='password', database='protein_sequence', port=3307)
+    cur = conn.cursor()
 
+    df = pd.read_csv('/Users/jeongjiyun/Desktop/Dev/ML:DL/Protein_Sequence/Alphafold_dataset/accession_ids.csv', sep = '\t')
+    uniprot_id_array = df.iloc[:, 0]
+    print(uniprot_id_array)
+
+    for i in uniprot_id_array:
+
+        start = time.time()
+        with multiprocessing.Pool(processes=4) as pool:
+            pool.map(process)
+
+        end = time.time()
+        print(f"{end-start}s")
+
+    conn.close()
+
+    print(error_id_array, str(len(error_id_array)) + "개")
 
 
 
